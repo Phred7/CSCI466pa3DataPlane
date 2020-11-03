@@ -41,8 +41,8 @@ if __name__ == '__main__':
                 t.start()
 
         try:
-                client.udt_send(2, "DATA")
-                sleep(0.1)
+                #client.udt_send(2, "DATA")
+                #sleep(0.1)
                 #client.udt_send(2, "We the People of the United States, in Order to form a more perfect...")
                 client.udt_send(2, 'We the People of the United States, in Order to form a more perfect Union, establish Justice, insure domestic Tranquility, provide for the common defense, promote the general Welfare, and secure the Blessings of Liberty to ourselves and our Posterity, do ordain and establish this Constitution for the United States of America.')
                 sleep(simulation_time)
@@ -57,22 +57,5 @@ if __name__ == '__main__':
                         o.stop = True
                 for t in thread_L:
                         t.join()
-
-
-                
-        # create some send events
-##      for i in range(3):
-##              client.udt_send(2, 'Sample data %d' % i)
-        
-##      client.udt_send(2, 'We the People of the United States, in Order to form a more perfect Union, establish Justice, insure domestic Tranquility, provide for the common defense, promote the general Welfare, and secure the Blessings of Liberty to ourselves and our Posterity, do ordain and establish this Constitution for the United States of America.')
-        
-##      # give the network sufficient time to transfer all packets before quitting
-##      sleep(simulation_time)
-##      
-##      # join all threads
-##      for o in object_L:
-##              o.stop = True
-##      for t in thread_L:
-##              t.join()
         
         print("All simulation threads joined")
