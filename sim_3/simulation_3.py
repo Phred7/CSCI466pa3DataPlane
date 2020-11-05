@@ -92,15 +92,19 @@ class RoutingTable:
 ##                                                       table[i][j] = str(path)
 
         def putRoute(self, route):
-                if(self.table[route.getSrc()-1][route.getDest()-1] == -1):    
-                        self.table[route.getSrc()-1][route.getDest()-1] = route
-                else:
-                        if(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), list)):
-                                self.table[route.getSrc()-1][route.getDest()-1].append(route)
+                if(isinstance(route, list)):
+                        for path in route:
+                                self.putRoute(path)
+                elif(isinstance(route, Route)):
+                        if(self.table[route.getSrc()-1][route.getDest()-1] == -1):    
+                                self.table[route.getSrc()-1][route.getDest()-1] = route
                         else:
-                                x = []
-                                x = [self.table[route.getSrc()-1][route.getDest()-1], route]
-                                self.table[route.getSrc()-1][route.getDest()-1] = x
+                                if(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), list)):
+                                        self.table[route.getSrc()-1][route.getDest()-1].append(route)
+                                else:
+                                        x = []
+                                        x = [self.table[route.getSrc()-1][route.getDest()-1], route]
+                                        self.table[route.getSrc()-1][route.getDest()-1] = x
 
                                 
 
@@ -109,37 +113,53 @@ class RoutingTable:
                         rpl = None
                 else:
                         rpl = rpl
-                if(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), list)):
-                        x = self.table[route.getSrc()-1][route.getDest()-1]
-                        for i in range(len(x)):
-                                if((x[i].equals(route))):
-                                        if rpl is not None:
-                                                self.table[route.getSrc()-1][route.getDest()-1][i] = rpl
-                                        else:
-                                                self.table[route.getSrc()-1][route.getDest()-1].pop(i)
-                                                if(len(self.table[route.getSrc()-1][route.getDest()-1]) == 1):
-                                                        self.table[route.getSrc()-1][route.getDest()-1] = self.table[route.getSrc()-1][route.getDest()-1][0]
-                                                
 
-                elif(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), Route)):
-                        if rpl is not None:
-                                self.table[route.getSrc()-1][route.getDest()-1] = rpl
-                        else:
-                                self.table[route.getSrc()-1][route.getDest()-1] = -1
+                if(isinstance(route, list)):
+                        for r in route:
+                                self.rmvRoute(r)
+                                
+                elif(isinstance(route, Route)):       
+                        if(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), list)):
+                                x = self.table[route.getSrc()-1][route.getDest()-1]
+                                for i in range(len(x)):
+                                        #print("i:" + str(i) + "; " + str(x) + "; rmv:" + str(route) + ";" , end='\n')
+                                        if((x[i].equals(route))):
+                                                if rpl is not None:
+                                                        self.table[route.getSrc()-1][route.getDest()-1][i] = rpl
+                                                else:
+                                                        self.table[route.getSrc()-1][route.getDest()-1].pop(i)
+                                                        if(len(self.table[route.getSrc()-1][route.getDest()-1]) == 1):
+                                                                self.table[route.getSrc()-1][route.getDest()-1] = self.table[route.getSrc()-1][route.getDest()-1][0]
+                                                                break 
+                                                        
+
+                        elif(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), Route)):
+                                if rpl is not None:
+                                        self.table[route.getSrc()-1][route.getDest()-1] = rpl
+                                else:
+                                        self.table[route.getSrc()-1][route.getDest()-1] = -1
                         
                                                
         def getNextHop(self, src, dest, curr):
                 route = self.getRoute(src, dest, curr)
-                return route.getNext(curr)
+                ret = -1 if route == -1 else route.getNext(curr)
+                return ret
                 
 
         def getRoute(self, src, dest, curr):
                 routes = self.table[src-1][dest-1]
                 if(isinstance(routes, list)):
-                        minRoute = routes[0]
+                        minRoute = None
                         for item in routes:
-                                if(item < minRoute):
-                                        minRoute
+                                if(item.getNext(curr) != -1):
+                                        minRoute = item
+                                        
+                        if(minRoute == None):
+                                return -1
+                        
+                        for item in routes:
+                                if((item < minRoute) and (item.getNext(curr) != -1)):
+                                        minRoute = item
                         return minRoute
                 elif(isinstance(routes, Route)):
                         return routes
@@ -149,6 +169,7 @@ class RoutingTable:
 
         def __str__(self):
                 ret_S = ''
+                ret_S += "RT:\n"
                 ret_S += "    "
                 for i in range(0, 2):
                         for j in range(len(self.getTable()[0])):
@@ -187,6 +208,7 @@ simulation_time = 3 # give the network sufficient time to transfer all packets b
 if __name__ == '__main__':
         object_L = []  # keeps track of objects, so we can kill their threads
 
+        # create routing table
         path1 = Route(1, 3, "1ABD3")
         path2 = Route(1, 4, "1ABD4")
         path3 = Route(1, 3, "1ACD3")
@@ -196,32 +218,13 @@ if __name__ == '__main__':
         path7 = Route(2, 3, "2ACD3")
         path8 = Route(2, 4, "2ACD4")
         paths = [path1, path2, path3, path4, path5, path6, path7, path8]
-        
         table = RoutingTable([1, 2, 3, 4], ['A', 'B', 'C', 'D'])
-        for p in range(len(paths)):
-                table.putRoute(paths[p])
-
+        table.putRoute(paths)
+        rmv = [path3, path4, path5, path6]
+        table.rmvRoute(rmv)
         print()
         print(str(table))
         print()
-        print(str(table.getTable()[0][2]))
-        print(str(table.getTable()[0][2][0].getHops()))
-        print(str(table.getTable()[0][2][1].getHops()))
-        table.rmvRoute(path3)
-        print(str(table.getTable()[0][2]))
-        table.rmvRoute(path1)
-        print(str(table.getTable()[0][2]))
-        print("\n" + str(table) + "\n")
-        
-##        print(path1.getHops())
-##        print(path1.getNumHops())
-##        print("curr: 0; next:" + str(path1.getNext("0")))
-##        print("curr: A; next:" + str(path1.getNext("A")))
-##        print("curr: B; next:" + str(path1.getNext("B")))
-##        print("curr: C; next:" + str(path1.getNext("C")))
-##        print("curr: D; next:" + str(path1.getNext("D")))
-##        print("curr: 2; next:" + str(path1.getNext("2")))
-##        print()
         
         # create network nodes
         client1 = network.Host(1)
@@ -232,13 +235,13 @@ if __name__ == '__main__':
         object_L.append(server1)
         server2 = network.Host(4)
         object_L.append(server2)
-        router_a = network.Router(name='A', intf_count=2, max_queue_size=router_queue_size)
+        router_a = network.Router(name='A', intf_count=2, max_queue_size=router_queue_size, routingTable=table)
         object_L.append(router_a)
-        router_b = network.Router(name='B', intf_count=1, max_queue_size=router_queue_size)
+        router_b = network.Router(name='B', intf_count=1, max_queue_size=router_queue_size, routingTable=table)
         object_L.append(router_b)
-        router_c = network.Router(name='C', intf_count=1, max_queue_size=router_queue_size)
+        router_c = network.Router(name='C', intf_count=1, max_queue_size=router_queue_size, routingTable=table)
         object_L.append(router_c)
-        router_d = network.Router(name='D', intf_count=2, max_queue_size=router_queue_size)
+        router_d = network.Router(name='D', intf_count=2, max_queue_size=router_queue_size, routingTable=table)
         object_L.append(router_d)
         
         
@@ -259,6 +262,9 @@ if __name__ == '__main__':
 
         link_layer.add_link(link.Link(router_d, 0, server1, 0, 50))
         link_layer.add_link(link.Link(router_d, 1, server2, 0, 50))
+
+        for link in link_layer.link_L:
+                print(str(link))
         
         # start all the objects
         thread_L = [threading.Thread(name=object.__str__(), target=object.run) for object in object_L]
@@ -267,7 +273,9 @@ if __name__ == '__main__':
 
         try:
                 #client1.udt_send(3, "DATA")
-                sleep(0.25)
+                sleep(0.5)
+                #client2.udt_send(3, "DATA")
+                
                 #client1.udt_send(3, 'We the People of the United States, in Order to form a more perfect Union, establish Justice, insure domestic Tranquility, provide for the common defense, promote the general Welfare, and secure the Blessings of Liberty to ourselves and our Posterity, do ordain and establish this Constitution for the United States of America.')
                 sleep(simulation_time)
                 for o in object_L:
