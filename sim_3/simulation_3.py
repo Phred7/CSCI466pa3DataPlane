@@ -50,8 +50,6 @@ class Route:
                 self.links = []
                 for i in range(0, len(self.hops)-1):
                         link = -1
-                        #print(str(i) + ": ", end='')
-                        #print(self.hops[i] + "; ", end='')
                         if(i == 0):
                                 link = table.getLink(int(self.hops[i]), str(self.hops[i+1]))
                                 self.links.append(link)
@@ -68,7 +66,6 @@ class Route:
                         if(link != -1):
                                 mtu = link.in_intf.mtu
                                 self.mtu = mtu if mtu < self.mtu else (self.mtu if self.mtu != 0 else mtu)
-                        #print(link)
                 print("Route: " + str(self) + " initialized with links: " + l + " with MTU=" + str(self.mtu))
 
         def getSrc(self):
@@ -87,9 +84,6 @@ class Route:
                 return len(self.hops) - 1
 
         def getNext(self, curr):
-##                if(self.hops == "2ACD3" and curr == 'D'):
-##                        for link in self.links:
-##                                print(link)
                 for char in range(self.getNumHops()):
                         if(str(curr) == str(self.hops[char])):
                                 if(char == (self.getNumHops()-1)):
@@ -102,7 +96,7 @@ class Route:
 class RoutingTable:
 
         table = None
-        node = None
+        
         links = None
         hosts = []
         routers = []
@@ -128,7 +122,6 @@ class RoutingTable:
 
         def createTable(self, numHosts, numRouters):
                 table = [[-1 for g in range(numHosts)] for h in range(numHosts)]
-                #print(table)
                 for i in range(0, (numHosts)):
                         for j in range(0, (numHosts)):
                                 table[i][j] = self.noConnVal
@@ -174,26 +167,21 @@ class RoutingTable:
                         if(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), list)):
                                 x = self.table[route.getSrc()-1][route.getDest()-1]
                                 for i in range(len(x)):
-                                        #print("i:" + str(i) + "; " + str(x) + "; rmv:" + str(route) + ";" , end='\n')
                                         if((x[i].equals(route))):
                                                 if rpl is not None:
                                                         self.table[route.getSrc()-1][route.getDest()-1][i] = rpl
-                                                        print("Route " + str(route) + " replaced with " + str(rpl))
                                                 else:
                                                         self.table[route.getSrc()-1][route.getDest()-1].pop(i)
                                                         if(len(self.table[route.getSrc()-1][route.getDest()-1]) == 1):
                                                                 self.table[route.getSrc()-1][route.getDest()-1] = self.table[route.getSrc()-1][route.getDest()-1][0]
-                                                                print("Route removed: " + str(route))
                                                                 break 
                                                         
 
                         elif(isinstance((self.table[route.getSrc()-1][route.getDest()-1]), Route)):
                                 if rpl is not None:
                                         self.table[route.getSrc()-1][route.getDest()-1] = rpl
-                                        print("Route " + str(route) + " replaced with " + str(rpl))
                                 else:
                                         self.table[route.getSrc()-1][route.getDest()-1] = -1
-                                        print("Route removed: " + str(route))
 
 
         def getNode(self, nodeName): #if a host use the int address as nodeName
@@ -226,12 +214,6 @@ class RoutingTable:
         def getLinkByRoute(self, fromNodeName, toNodeName, srcInterface, route): #if a host use the int address as nodeName
                 fNode = self.getNode(fromNodeName)
                 tNode = self.getNode(toNodeName)
-##                if(fromNodeName == 'D'):
-##                        print(fNode)
-##                        print(tNode)
-##                        print(srcInterface)
-##                        #print(self.links[-1])
-##                        #print(route.links[-1])
                 if fNode is False:
                         return -1
                 if tNode is False:
@@ -240,21 +222,14 @@ class RoutingTable:
                         return -1
                 
                 for link in route.links:
-##                        if(fromNodeName == 'D'): 
-##                                print(link)
-                        #if(link == route.links[-1]):
-                                #print("link: " + str(link) + "; From: " + str(link.from_node) + "; To: " + str(link.to_node) + "; intf: " + str(link.from_intf_num))
-                        if((link.from_node == fNode) and (link.to_node == tNode)): #and(link.from_intf_num == srcInterface)
-                                #print("link: " + str(link))
+                        if((link.from_node == fNode) and (link.to_node == tNode)): 
                                 return link
                 return -1
 
 
         def getNextLink(self, dest, curr, src, srcInterface):
-                #print("src: " + str(src))
                 route = self.getRoute(dest, curr, src)
                 hop = route.getNext(curr)
-                #print("hop:" + str(hop))
                 nxt =  hop if route != 0 else 0
                 dest = nxt if nxt != 0 else dest
                 return -1 if route == -1 else self.getLinkByRoute(curr, dest, srcInterface, route)
@@ -262,7 +237,6 @@ class RoutingTable:
         def getRoute(self, dest, curr, src):                        
                 ret = []
                 routes = self.table[src-1][dest-1]
-                #print("routes: " + str(routes))
                 if(isinstance(routes, list)):
                         bestRoute = routes[0]
                         for item in routes:
@@ -280,7 +254,6 @@ class RoutingTable:
                                 bestRoute = item if ((bestRoute < item) and (item.getMTU() != 0))  else bestRoute
                         ret = bestRoute
                         return ret
-                #print("return route: " + str(routes))
                 return ret
 
         def getOutIntfNum(self, dest, curr, src, srcInterface):
@@ -337,7 +310,7 @@ class RoutingTable:
         
 ## configuration parameters
 router_queue_size = 0  # 0 means unlimited
-simulation_time = 8 # give the network sufficient time to transfer all packets before quitting
+simulation_time = 4 # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
         object_L = []  # keeps track of objects, so we can kill their threads
@@ -376,11 +349,6 @@ if __name__ == '__main__':
         link_layer.add_link(link.Link(router_d, 0, server1, 0, 50)) #D to host3
         link_layer.add_link(link.Link(router_d, 1, server2, 0, 50)) #D to host4
 
-##        print("Links:")
-##        for link in link_layer.link_L:
-##                print(str(link))
-##        print()
-
         # create routing table
         hosts = [client1, client2, server1, server2]
         routers = [router_a, router_b, router_c, router_d]
@@ -393,7 +361,6 @@ if __name__ == '__main__':
         path6 = Route(2, 4, "2ABD4", table)
         path7 = Route(2, 3, "2ACD3", table)
         path8 = Route(2, 4, "2ACD4", table)
-        path1.mtu = 50
         paths = [path1, path2, path3, path4, path5, path6, path7, path8]
         table.putRoute(paths)
         rmv = [path3, path4, path5, path6]
@@ -411,12 +378,12 @@ if __name__ == '__main__':
                 t.start()
         print()
         try:
-                #client2.udt_send(3, "DATA")
-                #sleep(0.5)
-                #client2.udt_send(3, "DATA")
-                
-                client1.udt_send(3, 'We the People of the United States, in Order to form a more perfect Union, establish Justice, insure domestic Tranquility, provide for the common defense, promote the general Welfare, and secure the Blessings of Liberty to ourselves and our Posterity, do ordain and establish this Constitution for the United States of America.')
-                sleep(simulation_time)
+                client1.udt_send(3, 'DATA PKT1')
+                sleep(1)
+                print()
+                client2.udt_send(4, 'DATA PKT2')
+                #client1.udt_send(3, 'We the People of the United States, in Order to form a more perfect Union, establish Justice, insure domestic Tranquility, provide for the common defense, promote the general Welfare, and secure the Blessings of Liberty to ourselves and our Posterity, do ordain and establish this Constitution for the United States of America.')
+                sleep(simulation_time-1)
                 print()
                 for o in object_L:
                         o.stop = True
